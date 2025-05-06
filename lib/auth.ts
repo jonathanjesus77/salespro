@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { executeQuery } from "@/lib/db"
 import { compare } from "bcryptjs"
+import { prisma } from "./db-init" // Import from our initialization file
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -20,16 +20,12 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Query to check if the user exists and the password is correct
-          const query = `
-            SELECT id, name, email, password, role 
-            FROM "User" 
-            WHERE email = $1
-          `
-
-          const result = await executeQuery(query, [credentials.email])
-
-          const user = result[0]
+          // Use Prisma to find the user
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email,
+            },
+          })
 
           if (!user) {
             return null
