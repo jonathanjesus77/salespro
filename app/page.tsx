@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { sql } from "@vercel/postgres"
+import { executeQuery } from "@/lib/db"
 import { MainNav } from "@/components/main-nav"
 
 export default async function Dashboard() {
@@ -25,23 +25,24 @@ export default async function Dashboard() {
     newProductsThisMonthResult,
     newSuppliersThisMonthResult,
   ] = await Promise.all([
-    sql`SELECT COUNT(*) as count FROM "Product"`,
-    sql`SELECT COUNT(*) as count FROM "Client"`,
-    sql`SELECT COUNT(*) as count FROM "Supplier"`,
-    sql`SELECT * FROM "Sale" WHERE status = ${"CONCLUIDA"}`,
-    sql`SELECT COUNT(*) as count FROM "Client" WHERE "createdAt" >= date_trunc('month', CURRENT_DATE)`,
-    sql`SELECT COUNT(*) as count FROM "Product" WHERE "createdAt" >= date_trunc('month', CURRENT_DATE)`,
-    sql`SELECT COUNT(*) as count FROM "Supplier" WHERE "createdAt" >= date_trunc('month', CURRENT_DATE)`,
+    executeQuery('SELECT COUNT(*) as count FROM "Product"'),
+    executeQuery('SELECT COUNT(*) as count FROM "Client"'),
+    executeQuery('SELECT COUNT(*) as count FROM "Supplier"'),
+    executeQuery('SELECT * FROM "Sale" WHERE status = $1', ["CONCLUIDA"]),
+    executeQuery('SELECT COUNT(*) as count FROM "Client" WHERE "createdAt" >= date_trunc(\'month\', CURRENT_DATE)'),
+    executeQuery('SELECT COUNT(*) as count FROM "Product" WHERE "createdAt" >= date_trunc(\'month\', CURRENT_DATE)'),
+    executeQuery('SELECT COUNT(*) as count FROM "Supplier" WHERE "createdAt" >= date_trunc(\'month\', CURRENT_DATE)'),
   ])
 
-  const productsCount = Number.parseInt(productsCountResult.rows[0].count)
-  const clientsCount = Number.parseInt(clientsCountResult.rows[0].count)
-  const suppliersCount = Number.parseInt(suppliersCountResult.rows[0].count)
-  const sales = salesResult.rows
-  const newClientsThisMonth = Number.parseInt(newClientsThisMonthResult.rows[0].count)
-  const newProductsThisMonth = Number.parseInt(newProductsThisMonthResult.rows[0].count)
-  const newSuppliersThisMonth = Number.parseInt(newSuppliersThisMonthResult.rows[0].count)
+  const productsCount = Number.parseInt(productsCountResult[0].count)
+  const clientsCount = Number.parseInt(clientsCountResult[0].count)
+  const suppliersCount = Number.parseInt(suppliersCountResult[0].count)
+  const sales = salesResult
+  const newClientsThisMonth = Number.parseInt(newClientsThisMonthResult[0].count)
+  const newProductsThisMonth = Number.parseInt(newProductsThisMonthResult[0].count)
+  const newSuppliersThisMonth = Number.parseInt(newSuppliersThisMonthResult[0].count)
 
+  // Calculate total sales
   const totalSales = sales.reduce((acc: number, sale: any) => acc + Number.parseFloat(sale.total), 0)
 
   return (

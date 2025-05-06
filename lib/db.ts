@@ -1,19 +1,18 @@
-import { sql } from "@vercel/postgres"
+import { neon } from "@neondatabase/serverless"
+import { drizzle } from "drizzle-orm/neon-http"
 
+// Create a SQL client with the Neon connection
+export const sql = neon(process.env.DATABASE_URL!)
+
+// Create a Drizzle client with the Neon connection
+export const db = drizzle(sql)
+
+// Helper function to execute SQL queries
 export async function executeQuery(query: string, params: any[] = []) {
-  if (params.length === 0) {
-    // Se não houver parâmetros, trata como simples template
-    return (await sql([query])) as any
+  try {
+    return await sql(query, params)
+  } catch (error) {
+    console.error("Database query error:", error)
+    throw error
   }
-
-  // Divide a query nos pontos $1, $2, etc.
-  const parts = query.split(/\$\d+/)
-
-  // Se o número de partes não bate com os parâmetros, erro
-  if (parts.length !== params.length + 1) {
-    throw new Error("Número de parâmetros não bate com placeholders na query.")
-  }
-
-  // Monta template string dinâmica com os parâmetros
-  return await sql(parts as any, ...params)
 }

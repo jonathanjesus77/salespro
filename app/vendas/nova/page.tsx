@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -16,21 +16,16 @@ export default function NovaVendaPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [clientId, setClientId] = useState("")
   const [items, setItems] = useState([{ productId: "", quantity: 1, price: 0 }])
-  const [clients, setClients] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
+  const [clients, setClients] = useState([])
+  const [products, setProducts] = useState([])
   const router = useRouter()
   const { toast } = useToast()
 
   // Buscar clientes e produtos ao carregar a página
-  useEffect(() => {
+  useState(() => {
     const fetchData = async () => {
       try {
-
-        const [clientsRes, productsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clients`),
-          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products`)
-
-        ])
+        const [clientsRes, productsRes] = await Promise.all([fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clients`), fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clients`)])
 
         if (clientsRes.ok && productsRes.ok) {
           const clientsData = await clientsRes.json()
@@ -51,16 +46,17 @@ export default function NovaVendaPage() {
     setItems([...items, { productId: "", quantity: 1, price: 0 }])
   }
 
-  const handleRemoveItem = (index: number) => {
+  const handleRemoveItem = (index) => {
     const newItems = [...items]
     newItems.splice(index, 1)
     setItems(newItems)
   }
 
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleItemChange = (index, field, value) => {
     const newItems = [...items]
     newItems[index][field] = value
 
+    // Se o campo for productId, atualizar o preço
     if (field === "productId") {
       const product = products.find((p) => p.id === value)
       if (product) {
@@ -72,20 +68,23 @@ export default function NovaVendaPage() {
   }
 
   const calculateTotal = () => {
-    return items.reduce((total, item) => total + item.price * item.quantity, 0)
+    return items.reduce((total, item) => {
+      return total + item.price * item.quantity
+    }, 0)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
+      // Gerar código da venda
       const saleCode = `VND-${Date.now().toString().slice(-6)}`
 
       const response = await fetch("/api/sales", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           code: saleCode,
@@ -94,26 +93,26 @@ export default function NovaVendaPage() {
           items: items.map((item) => ({
             productId: item.productId,
             quantity: Number(item.quantity),
-            price: Number(item.price)
-          }))
-        })
+            price: Number(item.price),
+          })),
+        }),
       })
 
       if (response.ok) {
         toast({
           title: "Venda registrada com sucesso",
-          description: `Venda ${saleCode} foi registrada com sucesso.`
+          description: `Venda ${saleCode} foi registrada com sucesso.`,
         })
         router.push("/vendas")
       } else {
         const error = await response.json()
         throw new Error(error.error || "Erro ao registrar venda")
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Erro ao registrar venda",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       })
     } finally {
       setIsLoading(false)
