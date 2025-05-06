@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(VENDEDOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+}
+
+model Product {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  category    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  supplierId  String
+  supplier    Supplier     @relation(fields: [supplierId], references: [id])
+  saleItems   SaleItem[]
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+}
+
+model Supplier {
+  id        String    @id @default(cuid())
+  name      String
+  contact   String?
+  email     String    @unique
+  phone     String?
+  address   String?
+  status    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Sale {
+  id        String     @id @default(cuid())
+  code      String     @unique
+  date      DateTime   @default(now())
+  total     Float
+  status    SaleStatus @default(CONCLUIDA)
+  clientId  String
+  client    Client     @relation(fields: [clientId], references: [id])
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  items     SaleItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model SaleItem {
+  id        String   @id @default(cuid())
+  quantity  Int
+  price     Float
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  VENDEDOR
+  ESTOQUISTA
+  CAIXA
+}
+
+enum SaleStatus {
+  PENDENTE
+  CONCLUIDA
+  CANCELADA
+}
