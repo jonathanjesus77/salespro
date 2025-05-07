@@ -25,22 +25,33 @@ export const authOptions: NextAuthOptions = {
             where: {
               email: credentials.email,
             },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              password: true,
+              role: true,
+            },
           })
 
           if (!user) {
+            console.log("User not found:", credentials.email)
             return null
           }
 
-          const isValid = await compare(credentials.password, user.password)
-          if (isValid) {
-            return {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-            }
+          const isPasswordValid = await compare(credentials.password, user.password)
+
+          if (!isPasswordValid) {
+            console.log("Invalid password for user:", credentials.email)
+            return null
           }
-          return null
+
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          }
         } catch (error) {
           console.error("Authentication error:", error)
           return null
@@ -66,5 +77,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
+  debug: process.env.NODE_ENV === "development",
 }

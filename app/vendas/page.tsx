@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { sql } from "@vercel/postgres"
+import { executeQuery } from "@/lib/db"
 
 export default async function VendasPage() {
   const session = await getServerSession(authOptions)
@@ -17,14 +17,16 @@ export default async function VendasPage() {
     redirect("/login")
   }
 
-  const result = await sql`
+  // Fetch sales with client and user information
+  const salesQuery = `
     SELECT s.*, c.name as client_name, u.name as user_name
     FROM "Sale" s
     JOIN "Client" c ON s."clientId" = c.id
     JOIN "User" u ON s."userId" = u.id
     ORDER BY s.date DESC
   `
-  const sales = result.rows
+
+  const sales = await executeQuery(salesQuery)
 
   return (
     <div className="flex min-h-screen w-full flex-col">

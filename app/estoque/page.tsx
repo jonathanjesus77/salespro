@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { sql } from "@vercel/postgres"
+import { executeQuery } from "@/lib/db"
 
 export default async function EstoquePage() {
   const session = await getServerSession(authOptions)
@@ -17,14 +17,15 @@ export default async function EstoquePage() {
     redirect("/login")
   }
 
-  // Fetch products with supplier info
-  const result = await sql`
+  // Fetch products with supplier information
+  const productsQuery = `
     SELECT p.*, s.name as supplier_name
     FROM "Product" p
     JOIN "Supplier" s ON p."supplierId" = s.id
     ORDER BY p.name ASC
   `
-  const products = result.rows
+
+  const products = await executeQuery(productsQuery)
 
   return (
     <div className="flex min-h-screen w-full flex-col">

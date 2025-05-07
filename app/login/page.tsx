@@ -2,10 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Briefcase } from "lucide-react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,12 +16,27 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+
+  // Check for error in URL
+  useEffect(() => {
+    const errorParam = searchParams.get("error")
+    if (errorParam) {
+      if (errorParam === "CredentialsSignin") {
+        setError("Email ou senha incorretos")
+      } else {
+        setError(`Erro de autenticação: ${errorParam}`)
+      }
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     try {
       const result = await signIn("credentials", {
@@ -31,6 +46,7 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
+        setError("Email ou senha incorretos")
         toast({
           title: "Erro ao fazer login",
           description: "Email ou senha incorretos",
@@ -45,6 +61,8 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (error) {
+      console.error("Login error:", error)
+      setError("Ocorreu um erro ao tentar fazer login")
       toast({
         title: "Erro ao fazer login",
         description: "Ocorreu um erro ao tentar fazer login",
@@ -68,6 +86,7 @@ export default function LoginPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="grid gap-4">
+            {error && <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md">{error}</div>}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
