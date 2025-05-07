@@ -25,7 +25,7 @@ export default function NovaVendaPage() {
   useState(() => {
     const fetchData = async () => {
       try {
-        const [clientsRes, productsRes] = await Promise.all([fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clients`), fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clients`)])
+        const [clientsRes, productsRes] = await Promise.all([fetch("/api/clients"), fetch("/api/products")])
 
         if (clientsRes.ok && productsRes.ok) {
           const clientsData = await clientsRes.json()
