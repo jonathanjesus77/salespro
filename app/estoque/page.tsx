@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { executeQuery } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export default async function EstoquePage() {
   const session = await getServerSession(authOptions)
@@ -17,15 +17,22 @@ export default async function EstoquePage() {
     redirect("/login")
   }
 
-  // Fetch products with supplier information
-  const productsQuery = `
-    SELECT p.*, s.name as supplier_name
-    FROM "Product" p
-    JOIN "Supplier" s ON p."supplierId" = s.id
-    ORDER BY p.name ASC
-  `
+  let products = []
 
-  const products = await executeQuery(productsQuery)
+  try {
+    // Fetch products with Prisma
+    products = await prisma.product.findMany({
+      include: {
+        supplier: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching products:", error)
+    // Continue with empty products array
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -72,14 +79,14 @@ export default async function EstoquePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product: any) => (
+                {products.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.code}</TableCell>
                     <TableCell>{product.name}</TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell>{product.stock}</TableCell>
-                    <TableCell>R$ {Number.parseFloat(product.price).toFixed(2)}</TableCell>
-                    <TableCell>{product.supplier_name}</TableCell>
+                    <TableCell>R$ {Number(product.price).toFixed(2)}</TableCell>
+                    <TableCell>{product.supplier?.name || "Fornecedor não encontrado"}</TableCell>
                   </TableRow>
                 ))}
                 {products.length === 0 && (

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { executeQuery } from "@/lib/db"
+import prisma from "@/lib/prisma"
 import { MainNav } from "@/components/main-nav"
 
 export default async function Dashboard() {
@@ -15,35 +15,67 @@ export default async function Dashboard() {
     redirect("/login")
   }
 
-  // Fetch dashboard data
-  const [
-    productsCountResult,
-    clientsCountResult,
-    suppliersCountResult,
-    salesResult,
-    newClientsThisMonthResult,
-    newProductsThisMonthResult,
-    newSuppliersThisMonthResult,
-  ] = await Promise.all([
-    executeQuery('SELECT COUNT(*) as count FROM "Product"'),
-    executeQuery('SELECT COUNT(*) as count FROM "Client"'),
-    executeQuery('SELECT COUNT(*) as count FROM "Supplier"'),
-    executeQuery('SELECT * FROM "Sale" WHERE status = $1', ["CONCLUIDA"]),
-    executeQuery('SELECT COUNT(*) as count FROM "Client" WHERE "createdAt" >= date_trunc(\'month\', CURRENT_DATE)'),
-    executeQuery('SELECT COUNT(*) as count FROM "Product" WHERE "createdAt" >= date_trunc(\'month\', CURRENT_DATE)'),
-    executeQuery('SELECT COUNT(*) as count FROM "Supplier" WHERE "createdAt" >= date_trunc(\'month\', CURRENT_DATE)'),
-  ])
+  // Default values in case of database errors
+  let productsCount = 0
+  let clientsCount = 0
+  let suppliersCount = 0
+  let totalSales = 0
+  let newClientsThisMonth = 0
+  let newProductsThisMonth = 0
+  let newSuppliersThisMonth = 0
 
-  const productsCount = Number.parseInt(productsCountResult[0].count)
-  const clientsCount = Number.parseInt(clientsCountResult[0].count)
-  const suppliersCount = Number.parseInt(suppliersCountResult[0].count)
-  const sales = salesResult
-  const newClientsThisMonth = Number.parseInt(newClientsThisMonthResult[0].count)
-  const newProductsThisMonth = Number.parseInt(newProductsThisMonthResult[0].count)
-  const newSuppliersThisMonth = Number.parseInt(newSuppliersThisMonthResult[0].count)
+  try {
+    // Fetch dashboard data with Prisma
+    const [
+      productsResult,
+      clientsResult,
+      suppliersResult,
+      salesResult,
+      newClientsResult,
+      newProductsResult,
+      newSuppliersResult,
+    ] = await Promise.all([
+      prisma.product.count(),
+      prisma.client.count(),
+      prisma.supplier.count(),
+      prisma.sale.findMany({
+        where: { status: "CONCLUIDA" },
+        select: { total: true },
+      }),
+      prisma.client.count({
+        where: {
+          createdAt: {
+            gte: new Date(new Date().setDate(1)), // First day of current month
+          },
+        },
+      }),
+      prisma.product.count({
+        where: {
+          createdAt: {
+            gte: new Date(new Date().setDate(1)), // First day of current month
+          },
+        },
+      }),
+      prisma.supplier.count({
+        where: {
+          createdAt: {
+            gte: new Date(new Date().setDate(1)), // First day of current month
+          },
+        },
+      }),
+    ])
 
-  // Calculate total sales
-  const totalSales = sales.reduce((acc: number, sale: any) => acc + Number.parseFloat(sale.total), 0)
+    productsCount = productsResult
+    clientsCount = clientsResult
+    suppliersCount = suppliersResult
+    totalSales = salesResult.reduce((acc, sale) => acc + Number(sale.total), 0)
+    newClientsThisMonth = newClientsResult
+    newProductsThisMonth = newProductsResult
+    newSuppliersThisMonth = newSuppliersResult
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error)
+    // Continue with default values
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">

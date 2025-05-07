@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { executeQuery } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export default async function FornecedoresPage() {
   const session = await getServerSession(authOptions)
@@ -17,13 +17,19 @@ export default async function FornecedoresPage() {
     redirect("/login")
   }
 
-  // Fetch suppliers
-  const suppliersQuery = `
-    SELECT * FROM "Supplier"
-    ORDER BY name ASC
-  `
+  let suppliers = []
 
-  const suppliers = await executeQuery(suppliersQuery)
+  try {
+    // Fetch suppliers with Prisma
+    suppliers = await prisma.supplier.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching suppliers:", error)
+    // Continue with empty suppliers array
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -70,9 +76,9 @@ export default async function FornecedoresPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {suppliers.map((supplier: any) => (
+                {suppliers.map((supplier) => (
                   <TableRow key={supplier.id}>
-                    <TableCell className="font-medium">{supplier.id}</TableCell>
+                    <TableCell className="font-medium">{supplier.id.substring(0, 8)}</TableCell>
                     <TableCell>{supplier.name}</TableCell>
                     <TableCell>{supplier.contact || "—"}</TableCell>
                     <TableCell>{supplier.email}</TableCell>

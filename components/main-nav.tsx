@@ -16,7 +16,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
 export function MainNav() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -31,6 +31,18 @@ export function MainNav() {
         .join("")
         .toUpperCase()
     : "US"
+
+  // If session is loading, show a simplified header
+  if (status === "loading") {
+    return (
+      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-6 w-6 text-primary" />
+          <span className="text-xl font-bold">SalesPro</span>
+        </div>
+      </header>
+    )
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">

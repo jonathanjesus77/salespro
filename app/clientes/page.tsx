@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { executeQuery } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export default async function ClientesPage() {
   const session = await getServerSession(authOptions)
@@ -17,13 +17,19 @@ export default async function ClientesPage() {
     redirect("/login")
   }
 
-  // Fetch clients
-  const clientsQuery = `
-    SELECT * FROM "Client"
-    ORDER BY name ASC
-  `
+  let clients = []
 
-  const clients = await executeQuery(clientsQuery)
+  try {
+    // Fetch clients with Prisma
+    clients = await prisma.client.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching clients:", error)
+    // Continue with empty clients array
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -70,9 +76,9 @@ export default async function ClientesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map((client: any) => (
+                {clients.map((client) => (
                   <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.id}</TableCell>
+                    <TableCell className="font-medium">{client.id.substring(0, 8)}</TableCell>
                     <TableCell>{client.name}</TableCell>
                     <TableCell>{client.email}</TableCell>
                     <TableCell>{client.phone || "—"}</TableCell>

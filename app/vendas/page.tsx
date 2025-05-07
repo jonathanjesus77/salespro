@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { executeQuery } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export default async function VendasPage() {
   const session = await getServerSession(authOptions)
@@ -17,16 +17,29 @@ export default async function VendasPage() {
     redirect("/login")
   }
 
-  // Fetch sales with client and user information
-  const salesQuery = `
-    SELECT s.*, c.name as client_name, u.name as user_name
-    FROM "Sale" s
-    JOIN "Client" c ON s."clientId" = c.id
-    JOIN "User" u ON s."userId" = u.id
-    ORDER BY s.date DESC
-  `
+  let sales = []
 
-  const sales = await executeQuery(salesQuery)
+  try {
+    // Fetch sales with Prisma
+    sales = await prisma.sale.findMany({
+      include: {
+        client: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching sales:", error)
+    // Continue with empty sales array
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -73,12 +86,12 @@ export default async function VendasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.map((sale: any) => (
+                {sales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell className="font-medium">{sale.code}</TableCell>
-                    <TableCell>{sale.client_name}</TableCell>
+                    <TableCell>{sale.client?.name || "Cliente não encontrado"}</TableCell>
                     <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-                    <TableCell>R$ {Number.parseFloat(sale.total).toFixed(2)}</TableCell>
+                    <TableCell>R$ {Number(sale.total).toFixed(2)}</TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -96,7 +109,7 @@ export default async function VendasPage() {
                             : "Cancelada"}
                       </span>
                     </TableCell>
-                    <TableCell>{sale.user_name}</TableCell>
+                    <TableCell>{sale.user?.name || "Usuário não encontrado"}</TableCell>
                   </TableRow>
                 ))}
                 {sales.length === 0 && (
