@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -22,10 +22,16 @@ export default function NovaVendaPage() {
   const { toast } = useToast()
 
   // Buscar clientes e produtos ao carregar a página
-  useState(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientsRes, productsRes] = await Promise.all([fetch("/api/clients"), fetch("/api/products")])
+        // Use the window.location to get the base URL
+        const baseUrl = window.location.origin
+
+        const [clientsRes, productsRes] = await Promise.all([
+          fetch(`${baseUrl}/api/clients`),
+          fetch(`${baseUrl}/api/products`),
+        ])
 
         if (clientsRes.ok && productsRes.ok) {
           const clientsData = await clientsRes.json()
@@ -36,11 +42,16 @@ export default function NovaVendaPage() {
         }
       } catch (error) {
         console.error("Erro ao buscar dados:", error)
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar clientes e produtos.",
+          variant: "destructive",
+        })
       }
     }
 
     fetchData()
-  }, [])
+  }, [toast])
 
   const handleAddItem = () => {
     setItems([...items, { productId: "", quantity: 1, price: 0 }])
@@ -80,8 +91,9 @@ export default function NovaVendaPage() {
     try {
       // Gerar código da venda
       const saleCode = `VND-${Date.now().toString().slice(-6)}`
+      const baseUrl = window.location.origin
 
-      const response = await fetch("/api/sales", {
+      const response = await fetch(`${baseUrl}/api/sales`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

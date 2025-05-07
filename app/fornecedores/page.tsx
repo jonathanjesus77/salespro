@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { executeQuery } from "@/lib/db"
+import { sql } from "@vercel/postgres"
 
 export default async function FornecedoresPage() {
   const session = await getServerSession(authOptions)
@@ -17,13 +17,12 @@ export default async function FornecedoresPage() {
     redirect("/login")
   }
 
-  // Fetch suppliers
-  const suppliersQuery = `
+  // Buscar fornecedores
+  const result = await sql`
     SELECT * FROM "Supplier"
     ORDER BY name ASC
   `
-
-  const suppliers = await executeQuery(suppliersQuery)
+  const suppliers = result.rows
 
   return (
     <div className="flex min-h-screen w-full flex-col">

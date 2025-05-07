@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { executeQuery } from "@/lib/db"
+import { sql } from "@vercel/postgres"
 
 export default async function ClientesPage() {
   const session = await getServerSession(authOptions)
@@ -17,13 +17,8 @@ export default async function ClientesPage() {
     redirect("/login")
   }
 
-  // Fetch clients
-  const clientsQuery = `
-    SELECT * FROM "Client"
-    ORDER BY name ASC
-  `
-
-  const clients = await executeQuery(clientsQuery)
+  const result = await sql`SELECT * FROM "Client" ORDER BY name ASC`
+  const clients = result.rows
 
   return (
     <div className="flex min-h-screen w-full flex-col">

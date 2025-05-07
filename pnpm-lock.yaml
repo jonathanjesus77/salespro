@@ -212,6 +212,9 @@ importers:
       postgres:
         specifier: latest
         version: 3.4.5
+      prisma:
+        specifier: latest
+        version: 6.7.0(typescript@5.0.2)
       react:
         specifier: ^19
         version: 19.0.0
@@ -264,9 +267,6 @@ importers:
       postcss:
         specifier: ^8
         version: 8.0.0
-      prisma:
-        specifier: 6.7.0
-        version: 6.7.0(typescript@5.0.2)
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.17
@@ -3880,6 +3880,7 @@ packages:
 
   libsql@0.5.8:
     resolution: {integrity: sha512-+OopMI1wM/NvAJTHf3O3+beHd1YfKLnSVsOGBl3/7UBDZ4ydVadkbBk5Hjjs9d3ALC5rBaftMY59AvwyC8MzPw==}
+    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   lighthouse-logger@1.4.2:

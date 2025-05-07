@@ -1,5 +1,8 @@
 import { hash } from "bcryptjs"
-import prisma from "./prisma"
+import { PrismaClient } from "@prisma/client"
+
+// Create a new PrismaClient instance
+const prisma = new PrismaClient()
 
 async function main() {
   // Limpar banco de dados
